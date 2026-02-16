@@ -294,6 +294,31 @@ document.getElementById("inp-name").addEventListener("keydown", (e) => {
   if (e.key === "Enter") document.getElementById("btn-add").click();
 });
 
+// Dark mode
+const DARK_KEY = "but_did_i_dark";
+
+function applyDarkMode(dark) {
+  document.body.classList.toggle("dark", dark);
+  document.getElementById("btn-dark-mode").textContent = dark ? "light" : "dark";
+}
+
+function initDarkMode() {
+  const stored = localStorage.getItem(DARK_KEY);
+  if (stored !== null) {
+    applyDarkMode(stored === "1");
+  } else {
+    applyDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+}
+
+document.getElementById("btn-dark-mode").addEventListener("click", () => {
+  const isDark = !document.body.classList.contains("dark");
+  localStorage.setItem(DARK_KEY, isDark ? "1" : "0");
+  applyDarkMode(isDark);
+});
+
+initDarkMode();
+
 // Tick every second to update elapsed times
 setInterval(() => {
   document.querySelectorAll(".timer-card").forEach((card) => {
