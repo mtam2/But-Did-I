@@ -1,0 +1,40 @@
+name: Build standalone file
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build standalone HTML
+        run: ./build.sh
+
+      - name: Verify output exists
+        run: test -f dist/but-did-i.html
+
+      - name: Verify output contains inlined CSS
+        run: grep -q '<style>' dist/but-did-i.html
+
+      - name: Verify output contains inlined JS
+        run: grep -q '<script>' dist/but-did-i.html
+
+      - name: Verify output contains key functions
+        run: |
+          grep -q 'function render' dist/but-did-i.html
+          grep -q 'function loadState' dist/but-did-i.html
+
+      - name: Verify no external references remain
+        run: |
+          ! grep -q 'href="style.css"' dist/but-did-i.html
+          ! grep -q 'src="app.js"' dist/but-did-i.html
+
+      - name: Upload standalone file
+        uses: actions/upload-artifact@v4
+        with:
+          name: but-did-i-standalone
+          path: dist/but-did-i.html
