@@ -93,6 +93,41 @@ function deleteTimer(id) {
   render();
 }
 
+function editTimer(id) {
+  const timer = state.timers.find((t) => t.id === id);
+  if (!timer) return;
+  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
+  if (!card) return;
+  card.innerHTML = `
+    <div class="edit-form">
+      <label>Name<input type="text" class="edit-name" value="${esc(timer.name)}"></label>
+      <label>Category<input type="text" class="edit-category" value="${esc(timer.category)}" list="category-list"></label>
+      <label>Color<input type="color" class="edit-color" value="${esc(timer.color)}"></label>
+      <div class="edit-actions">
+        <button class="edit-save-btn" onclick="saveEdit(${id})">save</button>
+        <button class="edit-cancel-btn" onclick="render()">cancel</button>
+      </div>
+    </div>`;
+  card.querySelector(".edit-name").focus();
+}
+
+function saveEdit(id) {
+  const timer = state.timers.find((t) => t.id === id);
+  if (!timer) return;
+  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
+  if (!card) return;
+  const name = card.querySelector(".edit-name").value.trim();
+  if (!name) {
+    card.querySelector(".edit-name").focus();
+    return;
+  }
+  timer.name = name;
+  timer.category = card.querySelector(".edit-category").value.trim() || "Uncategorized";
+  timer.color = card.querySelector(".edit-color").value;
+  saveState();
+  render();
+}
+
 function render() {
   const container = document.getElementById("timers-container");
   const logList = document.getElementById("log-list");
@@ -128,6 +163,7 @@ function render() {
         html += `
           <div class="timer-card" style="--card-color:${esc(t.color)}" data-id="${t.id}">
             <button class="delete-btn" onclick="deleteTimer(${t.id})" title="Delete">&times;</button>
+            <button class="edit-btn" onclick="editTimer(${t.id})" title="Edit">&#9998;</button>
             <div class="timer-name">${esc(t.name)}</div>
             <div class="timer-elapsed">${formatElapsed(elapsed)}</div>
             <div class="timer-reset-time">${formatAbsolute(t.resetTime)}</div>

@@ -148,6 +148,76 @@ h2 {
 .delete-btn:hover {
   color: #e44;
 }
+.edit-btn {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.edit-btn:hover {
+  color: #555;
+}
+
+/* Edit form inside timer card */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.edit-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.7rem;
+  color: #777;
+  gap: 2px;
+}
+.edit-form input {
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.edit-form input[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 1px;
+  cursor: pointer;
+}
+.edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.edit-save-btn,
+.edit-cancel-btn {
+  flex: 1;
+  padding: 4px 0;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.edit-save-btn {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+.edit-save-btn:hover {
+  background: #555;
+  border-color: #555;
+}
+.edit-cancel-btn {
+  background: #fff;
+  color: #333;
+}
+.edit-cancel-btn:hover {
+  background: #f0f0f0;
+}
 
 /* Reset log */
 #log-section {
