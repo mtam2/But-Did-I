@@ -128,6 +128,77 @@ function saveEdit(id) {
   render();
 }
 
+function moveTimer(id, direction) {
+  const idx = state.timers.findIndex((t) => t.id === id);
+  if (idx === -1) return;
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= state.timers.length) return;
+  const [moved] = state.timers.splice(idx, 1);
+  state.timers.splice(newIdx, 0, moved);
+  saveState();
+  render();
+  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
+  if (card) card.focus();
+}
+
+function onTimerKeydown(e) {
+  if (!e.altKey) return;
+  const id = Number(e.currentTarget.dataset.id);
+  if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    moveTimer(id, -1);
+  } else if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+    e.preventDefault();
+    moveTimer(id, 1);
+  }
+}
+
+function sanitizeColor(c) {
+  return /^#[0-9a-f]{6}$/i.test(c) ? c : "#e53935";
+}
+
+let dragId = null;
+
+function onDragStart(e) {
+  dragId = Number(e.currentTarget.dataset.id);
+  e.currentTarget.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  const card = e.currentTarget;
+  if (Number(card.dataset.id) !== dragId) {
+    card.classList.add("drag-over");
+  }
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const targetId = Number(e.currentTarget.dataset.id);
+  e.currentTarget.classList.remove("drag-over");
+  if (dragId === null || dragId === targetId) return;
+  const fromIdx = state.timers.findIndex((t) => t.id === dragId);
+  const toIdx = state.timers.findIndex((t) => t.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = state.timers.splice(fromIdx, 1);
+  state.timers.splice(toIdx, 0, moved);
+  saveState();
+  render();
+}
+
+function onDragLeave(e) {
+  e.currentTarget.classList.remove("drag-over");
+}
+
+function onDragEnd(e) {
+  dragId = null;
+  document.querySelectorAll(".dragging, .drag-over").forEach((el) => {
+    el.classList.remove("dragging", "drag-over");
+  });
+}
+
 function render() {
   const container = document.getElementById("timers-container");
   const logList = document.getElementById("log-list");
@@ -161,9 +232,9 @@ function render() {
         const elapsed = Date.now() - t.resetTime;
         const color = sanitizeColor(t.color);
         html += `
-          <div class="timer-card" style="--card-color:${esc(t.color)}" data-id="${t.id}">
-            <button class="delete-btn" onclick="deleteTimer(${t.id})" title="Delete">&times;</button>
-            <button class="edit-btn" onclick="editTimer(${t.id})" title="Edit">&#9998;</button>
+          <div class="timer-card" style="--card-color:${color}" data-id="${t.id}" tabindex="0" draggable="true" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)" onkeydown="onTimerKeydown(event)">
+            <button class="delete-btn" onclick="deleteTimer(${t.id})" title="Delete" aria-label="Delete ${esc(t.name)}">&times;</button>
+            <button class="edit-btn" onclick="editTimer(${t.id})" title="Edit" aria-label="Edit ${esc(t.name)}">&#9998;</button>
             <div class="timer-name">${esc(t.name)}</div>
             <div class="timer-elapsed">${formatElapsed(elapsed)}</div>
             <div class="timer-reset-time">${formatAbsolute(t.resetTime)}</div>
