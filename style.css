@@ -67,7 +67,7 @@ h2 {
   color: var(--text-muted);
 }
 
-/* Header with dark mode toggle */
+/* Header */
 .header {
   display: flex;
   align-items: center;
@@ -77,7 +77,11 @@ h2 {
 .header h1 {
   margin-bottom: 0;
 }
-#btn-dark-mode {
+.header-buttons {
+  display: flex;
+  gap: 6px;
+}
+.header-buttons button {
   background: none;
   border: 1px solid var(--border);
   color: var(--text-faint);
@@ -86,7 +90,7 @@ h2 {
   padding: 4px 10px;
   border-radius: 6px;
 }
-#btn-dark-mode:hover {
+.header-buttons button:hover {
   color: var(--text);
   border-color: var(--text-faint);
 }

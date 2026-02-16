@@ -319,6 +319,23 @@ document.getElementById("btn-dark-mode").addEventListener("click", () => {
 
 initDarkMode();
 
+// Fullscreen
+const btnFullscreen = document.getElementById("btn-fullscreen");
+
+function updateFullscreenBtn() {
+  btnFullscreen.textContent = document.fullscreenElement ? "exit" : "fullscreen";
+}
+
+btnFullscreen.addEventListener("click", () => {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+});
+
+document.addEventListener("fullscreenchange", updateFullscreenBtn);
+
 // Tick every second to update elapsed times
 setInterval(() => {
   document.querySelectorAll(".timer-card").forEach((card) => {
