@@ -323,7 +323,9 @@ initDarkMode();
 const btnFullscreen = document.getElementById("btn-fullscreen");
 
 function updateFullscreenBtn() {
-  btnFullscreen.textContent = document.fullscreenElement ? "exit" : "fullscreen";
+  const isFs = !!document.fullscreenElement;
+  btnFullscreen.textContent = isFs ? "exit" : "fullscreen";
+  document.body.classList.toggle("fullscreen", isFs);
 }
 
 btnFullscreen.addEventListener("click", () => {
