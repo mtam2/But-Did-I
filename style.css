@@ -135,6 +135,30 @@ body.fullscreen .add-form {
   padding: 2px;
   cursor: pointer;
 }
+.alarm-input {
+  display: flex;
+  gap: 4px;
+}
+.alarm-input input[type="number"] {
+  width: 70px;
+}
+.alarm-input select {
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.edit-form .alarm-input input[type="number"] {
+  width: 50px;
+  padding: 4px 6px;
+  font-size: 0.85rem;
+}
+.edit-form .alarm-input select {
+  padding: 4px 6px;
+  font-size: 0.85rem;
+}
 .add-form button {
   width: 40px;
   height: 40px;
@@ -195,7 +219,23 @@ body.fullscreen .add-form {
 .timer-reset-time {
   font-size: 0.7rem;
   color: var(--text-faintest);
+  margin-bottom: 4px;
+}
+.timer-due {
+  font-size: 0.75rem;
+  color: var(--text-faint);
   margin-bottom: 10px;
+}
+.timer-card.overdue {
+  animation: card-pulse 1.6s ease-in-out infinite;
+}
+.timer-card.overdue .timer-due {
+  color: #e44;
+  font-weight: 600;
+}
+@keyframes card-pulse {
+  0%, 100% { box-shadow: 0 1px 3px var(--shadow); }
+  50% { box-shadow: 0 0 12px var(--card-color); }
 }
 .reset-btn {
   border: 2px solid var(--card-color);

@@ -60,11 +60,50 @@ function formatAbsolute(ts) {
   return `${month}/${day} ${hours}:${mins}${ampm}`;
 }
 
-function addTimer(name, category, color) {
+function addTimer(name, category, color, dueAfter) {
   const now = Date.now();
-  state.timers.push({ id: now, name, category, color, resetTime: now });
+  state.timers.push({ id: now, name, category, color, dueAfter, resetTime: now });
   saveState();
   render();
+}
+
+const UNIT_MS = { sec: 1000, min: 60000, hr: 3600000, day: 86400000 };
+
+function parseDueAfter(amount, unit) {
+  const n = parseFloat(amount);
+  if (!isFinite(n) || n <= 0) return undefined;
+  return Math.round(n * (UNIT_MS[unit] || 0));
+}
+
+function dueAfterToFields(ms) {
+  if (!ms) return { amount: "", unit: "hr" };
+  if (ms % UNIT_MS.day === 0) return { amount: ms / UNIT_MS.day, unit: "day" };
+  if (ms % UNIT_MS.hr === 0) return { amount: ms / UNIT_MS.hr, unit: "hr" };
+  return { amount: ms / UNIT_MS.min, unit: "min" };
+}
+
+function formatDueLabel(timer) {
+  if (!timer.dueAfter) return "";
+  const remaining = timer.dueAfter - (Date.now() - timer.resetTime);
+  if (remaining > 0) return `due in ${formatElapsed(remaining)}`;
+  return `overdue by ${formatElapsed(-remaining)}`;
+}
+
+function maybeRequestNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+function fireAlarm(timer) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification("But Did I?", { body: `${timer.name} is overdue` });
+    } catch (e) {
+      // ignore
+    }
+  }
 }
 
 function resetTimer(id, at) {
@@ -80,6 +119,7 @@ function resetTimer(id, at) {
     time: ts,
   });
   timer.resetTime = ts;
+  timer.alarmed = false;
   if (state.log.length > 200) state.log.length = 200;
   saveState();
   render();
@@ -172,11 +212,22 @@ function editTimer(id) {
   if (!timer) return;
   const card = document.querySelector(`.timer-card[data-id="${id}"]`);
   if (!card) return;
+  const { amount, unit } = dueAfterToFields(timer.dueAfter);
+  const unitOption = (val, label) =>
+    `<option value="${val}"${val === unit ? " selected" : ""}>${label}</option>`;
   card.innerHTML = `
     <div class="edit-form">
       <label>Name<input type="text" class="edit-name" value="${esc(timer.name)}"></label>
       <label>Category<input type="text" class="edit-category" value="${esc(timer.category)}" list="category-list"></label>
       <label>Color<input type="color" class="edit-color" value="${esc(timer.color)}"></label>
+      <label>Alarm after
+        <span class="alarm-input">
+          <input type="number" min="0" step="any" class="edit-alarm-amount" value="${amount}" placeholder="off">
+          <select class="edit-alarm-unit">
+            ${unitOption("min", "min")}${unitOption("hr", "hr")}${unitOption("day", "day")}
+          </select>
+        </span>
+      </label>
       <div class="edit-actions">
         <button class="edit-save-btn" onclick="saveEdit(${id})">save</button>
         <button class="edit-cancel-btn" onclick="render()">cancel</button>
@@ -198,6 +249,15 @@ function saveEdit(id) {
   timer.name = name;
   timer.category = card.querySelector(".edit-category").value.trim() || "Uncategorized";
   timer.color = card.querySelector(".edit-color").value;
+  const newDueAfter = parseDueAfter(
+    card.querySelector(".edit-alarm-amount").value,
+    card.querySelector(".edit-alarm-unit").value,
+  );
+  if (newDueAfter !== timer.dueAfter) {
+    timer.dueAfter = newDueAfter;
+    timer.alarmed = false;
+  }
+  if (timer.dueAfter) maybeRequestNotificationPermission();
   saveState();
   render();
 }
@@ -305,13 +365,18 @@ function render() {
       for (const t of timers) {
         const elapsed = Date.now() - t.resetTime;
         const color = sanitizeColor(t.color);
+        const overdue = t.dueAfter && elapsed >= t.dueAfter;
+        const dueLine = t.dueAfter
+          ? `<div class="timer-due">${esc(formatDueLabel(t))}</div>`
+          : "";
         html += `
-          <div class="timer-card" style="--card-color:${color}" data-id="${t.id}" tabindex="0" draggable="true" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)" onkeydown="onTimerKeydown(event)">
+          <div class="timer-card${overdue ? " overdue" : ""}" style="--card-color:${color}" data-id="${t.id}" tabindex="0" draggable="true" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)" onkeydown="onTimerKeydown(event)">
             <button class="delete-btn" onclick="deleteTimer(${t.id})" title="Delete" aria-label="Delete ${esc(t.name)}">&times;</button>
             <button class="edit-btn" onclick="editTimer(${t.id})" title="Edit" aria-label="Edit ${esc(t.name)}">&#9998;</button>
             <div class="timer-name">${esc(t.name)}</div>
             <div class="timer-elapsed">${formatElapsed(elapsed)}</div>
             <div class="timer-reset-time">${formatAbsolute(t.resetTime)}</div>
+            ${dueLine}
             <button class="reset-btn" style="--card-color:${color}" onclick="resetTimer(${t.id})">reset</button>
             <button class="backdate-btn" onclick="backdateTimer(${t.id})" title="Reset to a past time">earlier...</button>
           </div>`;
@@ -355,12 +420,18 @@ document.getElementById("btn-add").addEventListener("click", () => {
   const name = document.getElementById("inp-name").value.trim();
   const category = document.getElementById("inp-category").value.trim();
   const color = document.getElementById("inp-color").value;
+  const dueAfter = parseDueAfter(
+    document.getElementById("inp-alarm-amount").value,
+    document.getElementById("inp-alarm-unit").value,
+  );
   if (!name) {
     document.getElementById("inp-name").focus();
     return;
   }
-  addTimer(name, category || "Uncategorized", color);
+  addTimer(name, category || "Uncategorized", color, dueAfter);
   document.getElementById("inp-name").value = "";
+  document.getElementById("inp-alarm-amount").value = "";
+  if (dueAfter) maybeRequestNotificationPermission();
 });
 
 document.getElementById("btn-clear-log").addEventListener("click", () => {
@@ -419,15 +490,40 @@ btnFullscreen.addEventListener("click", () => {
 
 document.addEventListener("fullscreenchange", updateFullscreenBtn);
 
-// Tick every second to update elapsed times
+// Tick every second to update elapsed times, due/overdue status, and title bar
+const BASE_TITLE = "But Did I?";
+
 setInterval(() => {
+  let dueCount = 0;
+  let dirty = false;
+  for (const timer of state.timers) {
+    if (!timer.dueAfter) continue;
+    const overdue = Date.now() - timer.resetTime >= timer.dueAfter;
+    if (overdue) {
+      dueCount++;
+      if (!timer.alarmed) {
+        timer.alarmed = true;
+        dirty = true;
+        fireAlarm(timer);
+      }
+    }
+  }
+  if (dirty) saveState();
+  document.title = dueCount > 0 ? `(${dueCount}) ${BASE_TITLE}` : BASE_TITLE;
+
   document.querySelectorAll(".timer-card").forEach((card) => {
     const id = Number(card.dataset.id);
     const timer = state.timers.find((t) => t.id === id);
     if (!timer) return;
     const elapsedEl = card.querySelector(".timer-elapsed");
-    if (!elapsedEl) return;
-    elapsedEl.textContent = formatElapsed(Date.now() - timer.resetTime);
+    if (elapsedEl)
+      elapsedEl.textContent = formatElapsed(Date.now() - timer.resetTime);
+    if (timer.dueAfter) {
+      const overdue = Date.now() - timer.resetTime >= timer.dueAfter;
+      card.classList.toggle("overdue", overdue);
+      const dueEl = card.querySelector(".timer-due");
+      if (dueEl) dueEl.textContent = formatDueLabel(timer);
+    }
   });
 }, 1000);
 

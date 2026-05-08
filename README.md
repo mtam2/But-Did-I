@@ -18,7 +18,9 @@ Inspired by [HTML is all you need to make a website](https://whitep4nth3r.com/bl
 
 Open `index.html` in any modern browser, or use the standalone `dist/but-did-i.html`.
 
-**Add a timer** -- type a name, pick an optional category and color, click +.
+**Add a timer** -- type a name, pick an optional category and color, optionally set an "alarm after" duration, click +.
+
+**Get alerted when overdue** -- if you set an alarm duration on a timer, the card pulses and shows "overdue by …" once the elapsed time crosses it. The browser tab title shows the overdue count, and a system notification fires once per overdue cycle (if you grant the browser permission).
 
 **Reset a timer** -- click "reset" when you've done the thing. The elapsed time gets logged and the timer restarts.
 
