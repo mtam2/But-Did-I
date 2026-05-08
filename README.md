@@ -4,11 +4,15 @@ A timer app for tracking recurring tasks. It answers one question: how long has 
 
 ## Philosophy
 
-This app is a single HTML file. No frameworks, no bundlers, no CDN links, no server. Open it in a browser and it works -- even offline.
+**Add less. Ship less. Worry less.**
+
+Websites start fast until you make them slow. This app is a single HTML file -- no frameworks, no bundlers, no CDN links, no server, no build step you didn't ask for. Open it in a browser and it works, even offline. The first website ever made still runs today on plain HTML; that's the lineage this app belongs to.
 
 All data lives in your browser's localStorage. Nothing leaves your machine. There's no account to create, no sync to configure, no privacy policy to read.
 
-Simplicity isn't a limitation. It's the entire point.
+A plain page isn't bland -- it's honest. Simplicity isn't a limitation. It's the entire point.
+
+Inspired by [HTML is all you need to make a website](https://whitep4nth3r.com/blog/html-is-all-you-need-to-make-a-website/).
 
 ## Usage
 
