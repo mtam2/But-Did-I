@@ -291,46 +291,119 @@ function sanitizeColor(c) {
   return /^#[0-9a-f]{6}$/i.test(c) ? c : "#e53935";
 }
 
-let dragId = null;
+// Drag-to-reorder via Pointer Events (works on touch + mouse).
+// Touch: long-press to enter drag mode, so vertical page scroll still works.
+// Mouse: drag starts after a small movement threshold.
+let drag = null;
+const DRAG_THRESHOLD = 5;
+const LONG_PRESS_MS = 350;
 
-function onDragStart(e) {
-  dragId = Number(e.currentTarget.dataset.id);
-  e.currentTarget.classList.add("dragging");
-  e.dataTransfer.effectAllowed = "move";
+function onCardPointerDown(e) {
+  const card = e.currentTarget;
+  if (card.querySelector(".edit-form")) return;
+  if (e.target.closest("button, input, select, label, a")) return;
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+
+  drag = {
+    id: Number(card.dataset.id),
+    card,
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    started: false,
+    isTouch: e.pointerType === "touch",
+    longPressTimer: null,
+  };
+
+  if (drag.isTouch) {
+    drag.longPressTimer = setTimeout(() => {
+      if (drag) startDrag();
+    }, LONG_PRESS_MS);
+  }
+
+  document.addEventListener("pointermove", onDocPointerMove);
+  document.addEventListener("pointerup", onDocPointerUp);
+  document.addEventListener("pointercancel", onDocPointerUp);
 }
 
-function onDragOver(e) {
+function startDrag() {
+  drag.started = true;
+  drag.card.classList.add("dragging");
+  try {
+    drag.card.setPointerCapture(drag.pointerId);
+  } catch (_) {}
+}
+
+function onDocPointerMove(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const dx = e.clientX - drag.startX;
+  const dy = e.clientY - drag.startY;
+
+  if (!drag.started) {
+    const dist = Math.hypot(dx, dy);
+    if (drag.isTouch) {
+      // Movement before long-press fires means the user is scrolling — abort.
+      if (dist > 10) {
+        clearTimeout(drag.longPressTimer);
+        cleanupDrag();
+      }
+      return;
+    }
+    if (dist < DRAG_THRESHOLD) return;
+    startDrag();
+  }
+
   e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-  const card = e.currentTarget;
-  if (Number(card.dataset.id) !== dragId) {
-    card.classList.add("drag-over");
+  drag.card.style.transform = `translate(${dx}px, ${dy}px)`;
+
+  // Hit-test for the card under the pointer (skipping the dragged card itself).
+  drag.card.style.pointerEvents = "none";
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  drag.card.style.pointerEvents = "";
+
+  document
+    .querySelectorAll(".timer-card.drag-over")
+    .forEach((c) => c.classList.remove("drag-over"));
+  if (el) {
+    const target = el.closest(".timer-card");
+    if (target && target !== drag.card) target.classList.add("drag-over");
   }
 }
 
-function onDrop(e) {
-  e.preventDefault();
-  const targetId = Number(e.currentTarget.dataset.id);
-  e.currentTarget.classList.remove("drag-over");
-  if (dragId === null || dragId === targetId) return;
-  const fromIdx = state.timers.findIndex((t) => t.id === dragId);
-  const toIdx = state.timers.findIndex((t) => t.id === targetId);
-  if (fromIdx === -1 || toIdx === -1) return;
-  const [moved] = state.timers.splice(fromIdx, 1);
-  state.timers.splice(toIdx, 0, moved);
-  saveState();
-  render();
+function onDocPointerUp(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  clearTimeout(drag.longPressTimer);
+
+  if (drag.started) {
+    const targetEl =
+      e.type === "pointercancel"
+        ? null
+        : document.querySelector(".timer-card.drag-over");
+    drag.card.style.transform = "";
+    drag.card.classList.remove("dragging");
+    document
+      .querySelectorAll(".drag-over")
+      .forEach((c) => c.classList.remove("drag-over"));
+    if (targetEl) {
+      const targetId = Number(targetEl.dataset.id);
+      const fromIdx = state.timers.findIndex((t) => t.id === drag.id);
+      const toIdx = state.timers.findIndex((t) => t.id === targetId);
+      if (fromIdx !== -1 && toIdx !== -1) {
+        const [moved] = state.timers.splice(fromIdx, 1);
+        state.timers.splice(toIdx, 0, moved);
+        saveState();
+        render();
+      }
+    }
+  }
+  cleanupDrag();
 }
 
-function onDragLeave(e) {
-  e.currentTarget.classList.remove("drag-over");
-}
-
-function onDragEnd(e) {
-  dragId = null;
-  document.querySelectorAll(".dragging, .drag-over").forEach((el) => {
-    el.classList.remove("dragging", "drag-over");
-  });
+function cleanupDrag() {
+  document.removeEventListener("pointermove", onDocPointerMove);
+  document.removeEventListener("pointerup", onDocPointerUp);
+  document.removeEventListener("pointercancel", onDocPointerUp);
+  drag = null;
 }
 
 function render() {
@@ -370,14 +443,14 @@ function render() {
           ? `<div class="timer-due">${esc(formatDueLabel(t))}</div>`
           : "";
         html += `
-          <div class="timer-card${overdue ? " overdue" : ""}" style="--card-color:${color}" data-id="${t.id}" tabindex="0" draggable="true" ondragstart="onDragStart(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)" ondragend="onDragEnd(event)" onkeydown="onTimerKeydown(event)">
+          <div class="timer-card${overdue ? " overdue" : ""}" style="--card-color:${color}" data-id="${t.id}" tabindex="0" onpointerdown="onCardPointerDown(event)" onkeydown="onTimerKeydown(event)">
             <button class="delete-btn" onclick="deleteTimer(${t.id})" title="Delete" aria-label="Delete ${esc(t.name)}">&times;</button>
             <button class="edit-btn" onclick="editTimer(${t.id})" title="Edit" aria-label="Edit ${esc(t.name)}">&#9998;</button>
             <div class="timer-name">${esc(t.name)}</div>
             <div class="timer-elapsed">${formatElapsed(elapsed)}</div>
             <div class="timer-reset-time">${formatAbsolute(t.resetTime)}</div>
             ${dueLine}
-            <button class="backdate-btn" onclick="backdateTimer(${t.id})" title="Reset to a past time" aria-label="Reset to a past time"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v3M11 1v3M2 7h12"/></svg></button>
+            <button class="backdate-btn" onclick="backdateTimer(${t.id})" title="Reset to a past time" aria-label="Reset to a past time"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M5 1v3M11 1v3M2 7h12"/></svg></button>
             <button class="reset-btn" style="--card-color:${color}" onclick="resetTimer(${t.id})">reset</button>
           </div>`;
       }
