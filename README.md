@@ -28,6 +28,8 @@ Open `index.html` in any modern browser, or use the standalone `dist/but-did-i.h
 
 **Reset log** -- every reset is recorded at the bottom with the timer name, elapsed time, and timestamp. The log keeps the last 200 entries.
 
+**Restore a deleted timer** -- if you delete a timer, its log entries stick around. Click "restore" on any of those rows to recreate the timer with the same name, category, and color, picking up from that reset's timestamp.
+
 ## Standalone file
 
 The development version is split into separate files (`index.html`, `style.css`, `app.js`). To produce a single self-contained HTML file:

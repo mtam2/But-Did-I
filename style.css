@@ -347,6 +347,20 @@ body.fullscreen .add-form {
   margin-left: auto;
   white-space: nowrap;
 }
+.restore-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.restore-btn:hover {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
 #btn-clear-log {
   background: none;
   border: none;

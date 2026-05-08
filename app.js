@@ -74,12 +74,31 @@ function resetTimer(id, at) {
   const elapsed = formatElapsed(ts - timer.resetTime);
   state.log.unshift({
     name: timer.name,
+    category: timer.category,
     color: timer.color,
     elapsed,
     time: ts,
   });
   timer.resetTime = ts;
   if (state.log.length > 200) state.log.length = 200;
+  saveState();
+  render();
+}
+
+function restoreTimer(time) {
+  const entry = state.log.find((e) => e.time === time);
+  if (!entry) return;
+  if (state.timers.some((t) => t.name === entry.name)) {
+    alert(`A timer named "${entry.name}" already exists.`);
+    return;
+  }
+  state.timers.push({
+    id: Date.now(),
+    name: entry.name,
+    category: entry.category || "Uncategorized",
+    color: sanitizeColor(entry.color),
+    resetTime: entry.time,
+  });
   saveState();
   render();
 }
@@ -306,15 +325,21 @@ function render() {
   if (state.log.length === 0) {
     logList.innerHTML = '<li class="empty-state">No resets yet.</li>';
   } else {
+    const liveNames = new Set(state.timers.map((t) => t.name));
     logList.innerHTML = state.log
-      .map(
-        (entry) => `
+      .map((entry) => {
+        const restorable = !liveNames.has(entry.name);
+        const restoreBtn = restorable
+          ? `<button class="restore-btn" onclick="restoreTimer(${entry.time})" title="Restore this timer">restore</button>`
+          : "";
+        return `
       <li>
         <span class="log-dot" style="background:${sanitizeColor(entry.color)}"></span>
         <span><strong>${esc(entry.name)}</strong> after ${esc(entry.elapsed)}</span>
         <span class="log-time">${formatAbsolute(entry.time)}</span>
-      </li>`,
-      )
+        ${restoreBtn}
+      </li>`;
+      })
       .join("");
   }
 }
