@@ -17,19 +17,20 @@
 */
 
 :root {
-  --bg: #f5f5f5;
-  --text: #333;
-  --text-muted: #555;
-  --text-faint: #777;
-  --text-faintest: #999;
-  --text-placeholder: #aaa;
-  --surface: #fff;
-  --border: #ddd;
-  --border-light: #f0f0f0;
-  --btn-bg: #333;
-  --btn-bg-hover: #555;
-  --icon-muted: #ccc;
-  --shadow: rgba(0, 0, 0, 0.1);
+  --bg: #f5f1e8;
+  --text: #222;
+  --text-muted: #4a4640;
+  --text-faint: #6e6a62;
+  --text-faintest: #948f84;
+  --text-placeholder: #b6b1a4;
+  --surface: #fffdf6;
+  --border: #d6cfbc;
+  --border-light: #e8e1cf;
+  --btn-bg: #222;
+  --btn-bg-hover: #444;
+  --icon-muted: #b6b1a4;
+  --shadow: rgba(60, 50, 25, 0.1);
+  --danger: #c43d2c;
 }
 body.dark {
   --bg: #000;
@@ -45,6 +46,7 @@ body.dark {
   --btn-bg-hover: #ccc;
   --icon-muted: #555;
   --shadow: rgba(0, 0, 0, 0.5);
+  --danger: #ff5a4d;
 }
 
 * {
@@ -86,7 +88,7 @@ h2 {
   border: 1px solid var(--border);
   color: var(--text-faint);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -117,7 +119,7 @@ body.fullscreen .add-form {
 .add-form label {
   display: flex;
   flex-direction: column;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: var(--text-faint);
   gap: 4px;
 }
@@ -125,7 +127,7 @@ body.fullscreen .add-form {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   background: var(--surface);
   color: var(--text);
 }
@@ -146,18 +148,18 @@ body.fullscreen .add-form {
   padding: 8px 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   background: var(--surface);
   color: var(--text);
 }
 .edit-form .alarm-input input[type="number"] {
   width: 50px;
   padding: 4px 6px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 .edit-form .alarm-input select {
   padding: 4px 6px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 .add-form button {
   width: 40px;
@@ -166,7 +168,7 @@ body.fullscreen .add-form {
   background: var(--btn-bg);
   color: var(--bg);
   border-radius: 8px;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -207,7 +209,7 @@ body.fullscreen .add-form {
 .timer-name {
   font-weight: 600;
   font-size: 1rem;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   word-break: break-word;
 }
 .timer-elapsed {
@@ -227,15 +229,21 @@ body.fullscreen .add-form {
   margin-bottom: 10px;
 }
 .timer-card.overdue {
-  animation: card-pulse 1.6s ease-in-out infinite;
+  animation: card-pulse 1.6s ease-in-out 4;
 }
 .timer-card.overdue .timer-due {
-  color: #e44;
+  color: var(--danger);
   font-weight: 600;
+}
+.timer-card.overdue .timer-due::before {
+  content: "•";
+  display: inline-block;
+  margin-right: 0.3em;
+  color: var(--danger);
 }
 @keyframes card-pulse {
   0%, 100% { box-shadow: 0 1px 3px var(--shadow); }
-  50% { box-shadow: 0 0 12px var(--card-color); }
+  50% { box-shadow: 0 0 14px var(--danger); }
 }
 .reset-btn {
   border: 2px solid var(--card-color);
@@ -245,7 +253,7 @@ body.fullscreen .add-form {
   padding: 6px 18px;
   border-radius: 20px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 .reset-btn:hover {
   background: var(--card-color);
@@ -258,7 +266,7 @@ body.fullscreen .add-form {
   border: none;
   color: var(--text-faintest);
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   text-decoration: underline;
 }
 .backdate-btn:hover {
@@ -285,7 +293,7 @@ body.fullscreen .add-form {
   border: none;
   color: var(--icon-muted);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 .edit-btn:hover {
   color: var(--text-muted);
@@ -301,7 +309,7 @@ body.fullscreen .add-form {
 .edit-form label {
   display: flex;
   flex-direction: column;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-faint);
   gap: 2px;
 }
@@ -309,7 +317,7 @@ body.fullscreen .add-form {
   padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   background: var(--surface);
   color: var(--text);
 }
@@ -331,7 +339,7 @@ body.fullscreen .add-form {
   border-radius: 6px;
   border: 1px solid var(--border);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 .edit-save-btn {
   background: var(--btn-bg);
@@ -368,7 +376,7 @@ body.fullscreen .add-form {
 #log-list li {
   padding: 8px 14px;
   border-bottom: 1px solid var(--border-light);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -392,7 +400,7 @@ body.fullscreen .add-form {
   border: 1px solid var(--border);
   color: var(--text-faint);
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   padding: 2px 8px;
   border-radius: 10px;
   white-space: nowrap;
