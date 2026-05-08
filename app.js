@@ -434,6 +434,101 @@ document.getElementById("btn-add").addEventListener("click", () => {
   if (dueAfter) maybeRequestNotificationPermission();
 });
 
+// Export / import
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+  a.href = url;
+  a.download = `but-did-i-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let data;
+    try {
+      data = JSON.parse(e.target.result);
+    } catch (err) {
+      alert("That doesn't look like a valid JSON file.");
+      return;
+    }
+    if (!data || !Array.isArray(data.timers) || !Array.isArray(data.log)) {
+      alert("File is missing the expected timers/log structure.");
+      return;
+    }
+    const msg = `Add ${data.timers.length} timer(s) and ${data.log.length} log entr${data.log.length === 1 ? "y" : "ies"} to your existing data? Duplicates (by timer name or log timestamp) will be skipped.`;
+    if (!confirm(msg)) return;
+
+    const existingNames = new Set(state.timers.map((t) => t.name));
+    const existingIds = new Set(state.timers.map((t) => t.id));
+    let timersAdded = 0;
+    let timersSkipped = 0;
+    for (const t of data.timers) {
+      if (!t || typeof t.name !== "string" || !t.name) continue;
+      if (existingNames.has(t.name)) {
+        timersSkipped++;
+        continue;
+      }
+      let id = typeof t.id === "number" ? t.id : Date.now() + timersAdded;
+      while (existingIds.has(id)) id++;
+      existingIds.add(id);
+      existingNames.add(t.name);
+      state.timers.push({ ...t, id });
+      timersAdded++;
+    }
+
+    const existingLogTimes = new Set(state.log.map((entry) => entry.time));
+    let logAdded = 0;
+    let logSkipped = 0;
+    for (const entry of data.log) {
+      if (!entry || typeof entry.time !== "number") continue;
+      if (existingLogTimes.has(entry.time)) {
+        logSkipped++;
+        continue;
+      }
+      existingLogTimes.add(entry.time);
+      state.log.push(entry);
+      logAdded++;
+    }
+    state.log.sort((a, b) => b.time - a.time);
+    if (state.log.length > 200) state.log.length = 200;
+
+    saveState();
+    render();
+    alert(
+      `Imported ${timersAdded} timer(s)` +
+        (timersSkipped ? ` (${timersSkipped} skipped)` : "") +
+        ` and ${logAdded} log entr${logAdded === 1 ? "y" : "ies"}` +
+        (logSkipped ? ` (${logSkipped} skipped)` : "") +
+        ".",
+    );
+  };
+  reader.onerror = () => alert("Could not read the selected file.");
+  reader.readAsText(file);
+}
+
+document.getElementById("btn-export").addEventListener("click", exportData);
+
+document.getElementById("btn-import").addEventListener("click", () => {
+  document.getElementById("inp-import-file").click();
+});
+
+document.getElementById("inp-import-file").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) importData(file);
+  e.target.value = "";
+});
+
 document.getElementById("btn-clear-log").addEventListener("click", () => {
   if (state.log.length === 0) return;
   if (!confirm("Clear the entire reset log? This cannot be undone.")) return;

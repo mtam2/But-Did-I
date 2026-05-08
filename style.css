@@ -100,6 +100,8 @@ h2 {
 /* Fullscreen mode */
 body.fullscreen .header h1,
 body.fullscreen #btn-dark-mode,
+body.fullscreen #btn-export,
+body.fullscreen #btn-import,
 body.fullscreen .add-form {
   display: none;
 }

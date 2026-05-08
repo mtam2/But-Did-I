@@ -27,9 +27,12 @@
     <div class="header">
       <h1>But Did I?</h1>
       <div class="header-buttons">
+        <button id="btn-export" title="Download timers and log as a JSON file">export</button>
+        <button id="btn-import" title="Append data from a JSON file">import</button>
         <button id="btn-fullscreen" title="Toggle fullscreen">fullscreen</button>
         <button id="btn-dark-mode" title="Toggle dark mode">dark</button>
       </div>
+      <input type="file" id="inp-import-file" accept="application/json,.json" hidden />
     </div>
 
     <div class="add-form">

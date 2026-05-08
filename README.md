@@ -32,6 +32,8 @@ Open `index.html` in any modern browser, or use the standalone `dist/but-did-i.h
 
 **Restore a deleted timer** -- if you delete a timer, its log entries stick around. Click "restore" on any of those rows to recreate the timer with the same name, category, and color, picking up from that reset's timestamp.
 
+**Export / import** -- click "export" in the header to download all timers and log entries as a JSON file. Click "import" and pick a previously exported file to merge it into your current data. Timers with names that already exist are skipped, and log entries are de-duplicated by timestamp. Useful for backups or pulling data in from another browser.
+
 ## Standalone file
 
 The development version is split into separate files (`index.html`, `style.css`, `app.js`). To produce a single self-contained HTML file:
@@ -48,7 +50,7 @@ This outputs `dist/but-did-i.html` -- one file you can drop anywhere and open of
 In your browser's localStorage under the key `but_did_i`. It stays on your machine.
 
 **How do I back up my data?**
-Open your browser's dev console and run `localStorage.getItem("but_did_i")`. Save the output. To restore, run `localStorage.setItem("but_did_i", '<your backup>')` and refresh.
+Click "export" in the header to download a JSON file with your timers and log. Click "import" and pick that file to merge it back in (timers with existing names and log entries with matching timestamps are skipped). For a manual backup you can also run `localStorage.getItem("but_did_i")` in the dev console.
 
 **How do I reset everything?**
 Simply clear your cookies and site data for this website or open dev
