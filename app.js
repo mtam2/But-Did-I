@@ -67,21 +67,76 @@ function addTimer(name, category, color) {
   render();
 }
 
-function resetTimer(id) {
+function resetTimer(id, at) {
   const timer = state.timers.find((t) => t.id === id);
   if (!timer) return;
-  const now = Date.now();
-  const elapsed = formatElapsed(now - timer.resetTime);
+  const ts = at ?? Date.now();
+  const elapsed = formatElapsed(ts - timer.resetTime);
   state.log.unshift({
     name: timer.name,
     color: timer.color,
     elapsed,
-    time: now,
+    time: ts,
   });
-  timer.resetTime = now;
+  timer.resetTime = ts;
   if (state.log.length > 200) state.log.length = 200;
   saveState();
   render();
+}
+
+function backdateTimer(id) {
+  const timer = state.timers.find((t) => t.id === id);
+  if (!timer) return;
+  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
+  if (!card) return;
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const timeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  card.innerHTML = `
+    <div class="edit-form">
+      <label>Date<input type="date" class="backdate-date" max="${dateValue}" value="${dateValue}"></label>
+      <label>Time<input type="time" class="backdate-time" value="${timeValue}"></label>
+      <div class="edit-actions">
+        <button class="edit-save-btn" onclick="saveBackdate(${id})">save</button>
+        <button class="edit-cancel-btn" onclick="render()">cancel</button>
+      </div>
+    </div>`;
+  card.querySelector(".backdate-date").focus();
+}
+
+function saveBackdate(id) {
+  const timer = state.timers.find((t) => t.id === id);
+  if (!timer) return;
+  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
+  if (!card) return;
+  const dateInput = card.querySelector(".backdate-date");
+  const timeInput = card.querySelector(".backdate-time");
+  if (!dateInput.value) {
+    dateInput.focus();
+    return;
+  }
+  if (!timeInput.value) {
+    timeInput.focus();
+    return;
+  }
+  const ts = new Date(`${dateInput.value}T${timeInput.value}`).getTime();
+  if (Number.isNaN(ts)) {
+    dateInput.focus();
+    return;
+  }
+  if (ts > Date.now()) {
+    alert("Reset time can't be in the future.");
+    dateInput.focus();
+    return;
+  }
+  if (ts >= timer.resetTime) {
+    resetTimer(id, ts);
+  } else {
+    timer.resetTime = ts;
+    saveState();
+    render();
+  }
 }
 
 function deleteTimer(id) {
@@ -239,6 +294,7 @@ function render() {
             <div class="timer-elapsed">${formatElapsed(elapsed)}</div>
             <div class="timer-reset-time">${formatAbsolute(t.resetTime)}</div>
             <button class="reset-btn" style="--card-color:${color}" onclick="resetTimer(${t.id})">reset</button>
+            <button class="backdate-btn" onclick="backdateTimer(${t.id})" title="Reset to a past time">earlier...</button>
           </div>`;
       }
       html += "</div></div>";

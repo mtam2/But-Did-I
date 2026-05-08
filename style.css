@@ -211,6 +211,19 @@ body.fullscreen .add-form {
   background: var(--card-color);
   color: #fff;
 }
+.backdate-btn {
+  display: block;
+  margin: 6px auto 0;
+  background: none;
+  border: none;
+  color: var(--text-faintest);
+  cursor: pointer;
+  font-size: 0.7rem;
+  text-decoration: underline;
+}
+.backdate-btn:hover {
+  color: var(--text-muted);
+}
 .delete-btn {
   position: absolute;
   top: 4px;
