@@ -260,14 +260,18 @@ body.fullscreen .add-form {
   color: #fff;
 }
 .backdate-btn {
-  display: block;
-  margin: 6px auto 0;
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
   background: none;
   border: none;
-  color: var(--text-faintest);
+  color: var(--icon-muted);
   cursor: pointer;
-  font-size: 0.75rem;
-  text-decoration: underline;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 .backdate-btn:hover {
   color: var(--text-muted);
