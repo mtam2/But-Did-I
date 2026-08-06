@@ -38,8 +38,15 @@ function saveState() {
   }
 }
 
+// Past 48 hours a running clock is noise, so switch to days & hours
+const DAYS_HOURS_THRESHOLD_MS = 48 * 3600000;
+
 function formatElapsed(ms) {
   const totalSec = Math.floor(ms / 1000);
+  if (ms >= DAYS_HOURS_THRESHOLD_MS) {
+    const totalHr = Math.floor(totalSec / 3600);
+    return `${Math.floor(totalHr / 24)}d ${totalHr % 24}h`;
+  }
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
