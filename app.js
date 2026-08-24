@@ -515,99 +515,195 @@ document.getElementById("btn-add").addEventListener("click", () => {
 });
 
 // Export / import
-function exportData() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-  a.href = url;
-  a.download = `but-did-i-${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+// The whole state travels as one line of text: UTF-8 JSON, deflated when the
+// browser offers it, then base64'd so it survives any text box it is pasted
+// through. The prefix says which of the two it is.
+const EXPORT_PREFIX = "BDI1:";
+const EXPORT_PREFIX_PACKED = "BDI1Z:";
+
+function bytesToBase64(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x2000)
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x2000));
+  return btoa(bin);
 }
 
-function importData(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    let data;
+function base64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function pipeBytes(bytes, transform) {
+  const stream = new Blob([bytes]).stream().pipeThrough(transform);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function serializeState() {
+  const json = new TextEncoder().encode(JSON.stringify(state));
+  if (typeof CompressionStream === "function") {
     try {
-      data = JSON.parse(e.target.result);
-    } catch (err) {
-      alert("That doesn't look like a valid JSON file.");
-      return;
+      const packed = await pipeBytes(json, new CompressionStream("deflate"));
+      return EXPORT_PREFIX_PACKED + bytesToBase64(packed);
+    } catch (e) {
+      console.warn("Could not compress export:", e);
     }
-    if (!data || !Array.isArray(data.timers) || !Array.isArray(data.log)) {
-      alert("File is missing the expected timers/log structure.");
-      return;
-    }
-    const msg = `Add ${data.timers.length} timer(s) and ${data.log.length} log entr${data.log.length === 1 ? "y" : "ies"} to your existing data? Duplicates (by timer name or log timestamp) will be skipped.`;
-    if (!confirm(msg)) return;
-
-    const existingNames = new Set(state.timers.map((t) => t.name));
-    const existingIds = new Set(state.timers.map((t) => t.id));
-    let timersAdded = 0;
-    let timersSkipped = 0;
-    for (const t of data.timers) {
-      if (!t || typeof t.name !== "string" || !t.name) continue;
-      if (existingNames.has(t.name)) {
-        timersSkipped++;
-        continue;
-      }
-      let id = typeof t.id === "number" ? t.id : Date.now() + timersAdded;
-      while (existingIds.has(id)) id++;
-      existingIds.add(id);
-      existingNames.add(t.name);
-      state.timers.push({ ...t, id });
-      timersAdded++;
-    }
-
-    const existingLogTimes = new Set(state.log.map((entry) => entry.time));
-    let logAdded = 0;
-    let logSkipped = 0;
-    for (const entry of data.log) {
-      if (!entry || typeof entry.time !== "number") continue;
-      if (existingLogTimes.has(entry.time)) {
-        logSkipped++;
-        continue;
-      }
-      existingLogTimes.add(entry.time);
-      state.log.push(entry);
-      logAdded++;
-    }
-    state.log.sort((a, b) => b.time - a.time);
-    if (state.log.length > 200) state.log.length = 200;
-
-    saveState();
-    render();
-    alert(
-      `Imported ${timersAdded} timer(s)` +
-        (timersSkipped ? ` (${timersSkipped} skipped)` : "") +
-        ` and ${logAdded} log entr${logAdded === 1 ? "y" : "ies"}` +
-        (logSkipped ? ` (${logSkipped} skipped)` : "") +
-        ".",
-    );
-  };
-  reader.onerror = () => alert("Could not read the selected file.");
-  reader.readAsText(file);
+  }
+  return EXPORT_PREFIX + bytesToBase64(json);
 }
 
-document.getElementById("btn-export").addEventListener("click", exportData);
+async function deserializeString(text) {
+  // Line breaks and stray spaces are what copy-paste does to a long string.
+  const s = text.replace(/\s+/g, "");
+  if (s.startsWith("{")) return JSON.parse(text); // contents of an old export file
+  let json;
+  if (s.startsWith(EXPORT_PREFIX_PACKED)) {
+    const packed = base64ToBytes(s.slice(EXPORT_PREFIX_PACKED.length));
+    json = await pipeBytes(packed, new DecompressionStream("deflate"));
+  } else if (s.startsWith(EXPORT_PREFIX)) {
+    json = base64ToBytes(s.slice(EXPORT_PREFIX.length));
+  } else {
+    throw new Error("Unrecognized export string");
+  }
+  return JSON.parse(new TextDecoder().decode(json));
+}
+
+async function importString(text) {
+  let data;
+  try {
+    data = await deserializeString(text);
+  } catch (err) {
+    alert(
+      "That doesn't look like a But Did I? export string. Copy the whole thing, starting at BDI1.",
+    );
+    return false;
+  }
+  if (!data || !Array.isArray(data.timers) || !Array.isArray(data.log)) {
+    alert("That string is missing the expected timers/log structure.");
+    return false;
+  }
+  const msg = `Add ${data.timers.length} timer(s) and ${data.log.length} log entr${data.log.length === 1 ? "y" : "ies"} to your existing data? Duplicates (by timer name or log timestamp) will be skipped.`;
+  if (!confirm(msg)) return false;
+
+  const existingNames = new Set(state.timers.map((t) => t.name));
+  const existingIds = new Set(state.timers.map((t) => t.id));
+  let timersAdded = 0;
+  let timersSkipped = 0;
+  for (const t of data.timers) {
+    if (!t || typeof t.name !== "string" || !t.name) continue;
+    if (existingNames.has(t.name)) {
+      timersSkipped++;
+      continue;
+    }
+    let id = typeof t.id === "number" ? t.id : Date.now() + timersAdded;
+    while (existingIds.has(id)) id++;
+    existingIds.add(id);
+    existingNames.add(t.name);
+    state.timers.push({ ...t, id });
+    timersAdded++;
+  }
+
+  const existingLogTimes = new Set(state.log.map((entry) => entry.time));
+  let logAdded = 0;
+  let logSkipped = 0;
+  for (const entry of data.log) {
+    if (!entry || typeof entry.time !== "number") continue;
+    if (existingLogTimes.has(entry.time)) {
+      logSkipped++;
+      continue;
+    }
+    existingLogTimes.add(entry.time);
+    state.log.push(entry);
+    logAdded++;
+  }
+  state.log.sort((a, b) => b.time - a.time);
+  if (state.log.length > 200) state.log.length = 200;
+
+  saveState();
+  render();
+  alert(
+    `Imported ${timersAdded} timer(s)` +
+      (timersSkipped ? ` (${timersSkipped} skipped)` : "") +
+      ` and ${logAdded} log entr${logAdded === 1 ? "y" : "ies"}` +
+      (logSkipped ? ` (${logSkipped} skipped)` : "") +
+      ".",
+  );
+  return true;
+}
+
+const dataDialog = document.getElementById("data-dialog");
+const dataTitle = document.getElementById("data-dialog-title");
+const dataHint = document.getElementById("data-dialog-hint");
+const dataText = document.getElementById("data-text");
+const btnDataPrimary = document.getElementById("btn-data-primary");
+
+function copyExportString() {
+  // The text is selected either way, so a failed copy still leaves the user
+  // one keystroke from having it.
+  dataText.focus();
+  dataText.select();
+  const done = (copied) => {
+    btnDataPrimary.textContent = copied ? "copied" : "press Ctrl/Cmd+C";
+    if (copied)
+      setTimeout(() => {
+        if (btnDataPrimary.textContent === "copied")
+          btnDataPrimary.textContent = "copy";
+      }, 1500);
+  };
+  const legacyCopy = () => {
+    try {
+      return document.execCommand("copy");
+    } catch (e) {
+      return false;
+    }
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(dataText.value).then(
+      () => done(true),
+      () => done(legacyCopy()),
+    );
+    return;
+  }
+  done(legacyCopy());
+}
+
+document.getElementById("btn-export").addEventListener("click", async () => {
+  dataTitle.textContent = "Export";
+  dataHint.textContent =
+    "Copy this string, then paste it into the import box on your other browser or machine.";
+  dataText.readOnly = true;
+  dataText.value = "generating…";
+  btnDataPrimary.textContent = "copy";
+  btnDataPrimary.onclick = copyExportString;
+  dataDialog.showModal();
+  dataText.value = await serializeState();
+  dataText.focus();
+  dataText.select();
+});
 
 document.getElementById("btn-import").addEventListener("click", () => {
-  document.getElementById("inp-import-file").click();
+  dataTitle.textContent = "Import";
+  dataHint.textContent =
+    "Paste an exported string. It is merged into what you already have — timers with existing names and log entries with matching timestamps are skipped.";
+  dataText.readOnly = false;
+  dataText.value = "";
+  btnDataPrimary.textContent = "import";
+  btnDataPrimary.onclick = async () => {
+    const text = dataText.value.trim();
+    if (!text) {
+      dataText.focus();
+      return;
+    }
+    if (await importString(text)) dataDialog.close();
+  };
+  dataDialog.showModal();
+  dataText.focus();
 });
 
-document.getElementById("inp-import-file").addEventListener("change", (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (file) importData(file);
-  e.target.value = "";
-});
+document
+  .getElementById("btn-data-close")
+  .addEventListener("click", () => dataDialog.close());
 
 document.getElementById("btn-clear-log").addEventListener("click", () => {
   if (state.log.length === 0) return;

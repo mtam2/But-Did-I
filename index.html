@@ -27,12 +27,11 @@
     <div class="header">
       <h1>But Did I?</h1>
       <div class="header-buttons">
-        <button id="btn-export" title="Download timers and log as a JSON file">export</button>
-        <button id="btn-import" title="Append data from a JSON file">import</button>
+        <button id="btn-export" title="Show a copy-pasteable string of your timers and log">export</button>
+        <button id="btn-import" title="Paste an exported string to merge it in">import</button>
         <button id="btn-fullscreen" title="Toggle fullscreen">fullscreen</button>
         <button id="btn-dark-mode" title="Toggle dark mode">dark</button>
       </div>
-      <input type="file" id="inp-import-file" accept="application/json,.json" hidden />
     </div>
 
     <div class="add-form">
@@ -69,6 +68,22 @@
     </div>
 
     <div id="timers-container"></div>
+
+    <dialog id="data-dialog">
+      <h2 id="data-dialog-title">Export</h2>
+      <p id="data-dialog-hint"></p>
+      <textarea
+        id="data-text"
+        spellcheck="false"
+        autocapitalize="off"
+        autocomplete="off"
+        autocorrect="off"
+      ></textarea>
+      <div class="dialog-actions">
+        <button id="btn-data-close">close</button>
+        <button id="btn-data-primary">copy</button>
+      </div>
+    </dialog>
 
     <div id="log-section">
       <h2>Reset Log <button id="btn-clear-log" title="Clear log">&times;</button></h2>

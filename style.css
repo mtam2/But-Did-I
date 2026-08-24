@@ -385,6 +385,74 @@ body.fullscreen .add-form {
   background: var(--border-light);
 }
 
+/* Export / import dialog */
+#data-dialog {
+  /* The `* { margin: 0 }` reset above kills the UA's centering margin */
+  margin: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px;
+  width: min(560px, 92vw);
+  box-shadow: 0 8px 30px var(--shadow);
+}
+#data-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+#data-dialog h2 {
+  margin: 0 0 6px;
+}
+#data-dialog-hint {
+  font-size: 0.8125rem;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+}
+#data-text {
+  width: 100%;
+  height: 150px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  word-break: break-all;
+}
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.dialog-actions button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px 18px;
+  border-radius: 6px;
+  min-height: 36px;
+}
+.dialog-actions button:hover,
+.dialog-actions button:active {
+  background: var(--border-light);
+}
+#btn-data-primary {
+  background: var(--btn-bg);
+  color: var(--bg);
+  border-color: var(--btn-bg);
+}
+#btn-data-primary:hover,
+#btn-data-primary:active {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-bg-hover);
+}
+
 /* Reset log */
 #log-section {
   margin-top: 32px;
