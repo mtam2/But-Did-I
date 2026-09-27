@@ -69,7 +69,15 @@ function formatAbsolute(ts) {
 
 function addTimer(name, category, color, dueAfter) {
   const now = Date.now();
-  state.timers.push({ id: now, name, category, color, dueAfter, resetTime: now });
+  state.timers.push({
+    id: now,
+    name,
+    category,
+    color,
+    dueAfter,
+    resetTime: now,
+    streakStart: dueAfter ? now : undefined,
+  });
   saveState();
   render();
 }
@@ -117,19 +125,74 @@ function resetTimer(id, at) {
   const timer = state.timers.find((t) => t.id === id);
   if (!timer) return;
   const ts = at ?? Date.now();
-  const elapsed = formatElapsed(ts - timer.resetTime);
+  const prevReset = timer.resetTime;
   state.log.unshift({
     name: timer.name,
     category: timer.category,
     color: timer.color,
-    elapsed,
+    elapsed: formatElapsed(ts - prevReset),
     time: ts,
   });
   timer.resetTime = ts;
   timer.alarmed = false;
   if (state.log.length > 200) state.log.length = 200;
+  const partyDays = updateStreak(timer, ts, prevReset);
   saveState();
   render();
+  if (partyDays) throwParty(timer, partyDays);
+}
+
+// A timer with an alarm earns a party for every 30 days it goes without an
+// overdue reset. Resetting while overdue starts the count over.
+const STREAK_MS = 30 * 86400000;
+
+// Returns the streak length in days when this reset crosses a new 30-day
+// mark, otherwise 0.
+function updateStreak(timer, ts, prevReset) {
+  if (!timer.dueAfter) return 0;
+  if (ts - prevReset >= timer.dueAfter) {
+    timer.streakStart = ts;
+    timer.streakParties = 0;
+    return 0;
+  }
+  // Timers from before streaks existed start counting at their last reset.
+  if (timer.streakStart == null) timer.streakStart = prevReset;
+  const periods = Math.floor((ts - timer.streakStart) / STREAK_MS);
+  if (periods <= (timer.streakParties || 0)) return 0;
+  timer.streakParties = periods;
+  return periods * 30;
+}
+
+function throwParty(timer, days) {
+  document.querySelector(".party")?.remove();
+  const party = document.createElement("div");
+  party.className = "party";
+  party.setAttribute("aria-live", "polite");
+  const colors = [
+    sanitizeColor(timer.color),
+    "#f6c343",
+    "#3fa66b",
+    "#3b82f6",
+    "#e14b8a",
+    "#8b5cf6",
+  ];
+  const rand = (min, max) => min + Math.random() * (max - min);
+  let pieces = "";
+  for (let i = 0; i < 90; i++) {
+    const style =
+      `left:${rand(0, 100)}%;` +
+      `--c:${colors[i % colors.length]};` +
+      `--dur:${rand(2.4, 4.2).toFixed(2)}s;` +
+      `--delay:${rand(0, 0.8).toFixed(2)}s;` +
+      `--sway:${(Math.random() < 0.5 ? -1 : 1) * rand(12, 48).toFixed(0)}px;` +
+      `--spin:${(Math.random() < 0.5 ? -1 : 1) * rand(540, 1080).toFixed(0)}deg`;
+    pieces += `<i style="${style}"><b></b></i>`;
+  }
+  party.innerHTML =
+    pieces +
+    `<div class="party-msg">&#127881; ${esc(timer.name)}<small>${days} days on time</small></div>`;
+  document.body.appendChild(party);
+  setTimeout(() => party.remove(), 5000);
 }
 
 function restoreTimer(time) {
@@ -220,6 +283,7 @@ function applyBackdate(id, ts) {
     resetTimer(id, ts);
   } else {
     timer.resetTime = ts;
+    if (timer.streakStart > ts) timer.streakStart = ts;
     saveState();
     render();
   }
@@ -339,6 +403,11 @@ function saveEdit(id) {
     card.querySelector(".edit-alarm-unit").value,
   );
   if (newDueAfter !== timer.dueAfter) {
+    // Turning an alarm on starts the streak now; nothing was tracked before.
+    if (!timer.dueAfter) {
+      timer.streakStart = timer.resetTime;
+      timer.streakParties = 0;
+    }
     timer.dueAfter = newDueAfter;
     timer.alarmed = false;
   }

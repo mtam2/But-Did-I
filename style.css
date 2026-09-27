@@ -529,6 +529,66 @@ dialog h2 {
   white-space: pre-line;
 }
 
+/* Streak party */
+.party {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 100;
+}
+.party i {
+  position: absolute;
+  top: -16px;
+  animation: confetti-fall var(--dur) ease-in var(--delay) both;
+}
+.party b {
+  display: block;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--c);
+  animation: confetti-sway 0.9s ease-in-out var(--delay) infinite alternate;
+}
+@keyframes confetti-fall {
+  to { transform: translateY(105vh); }
+}
+@keyframes confetti-sway {
+  from { transform: translateX(calc(-1 * var(--sway))) rotate(0deg); }
+  to { transform: translateX(var(--sway)) rotate(var(--spin)); }
+}
+.party-msg {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  padding: 18px 28px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 30px var(--shadow);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  animation: party-msg 4.5s ease both;
+}
+.party-msg small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+@keyframes party-msg {
+  0% { opacity: 0; transform: translate(-50%, 20px) scale(0.8); }
+  10%, 80% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -10px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .party i { display: none; }
+  .party-msg { animation: none; transform: translateX(-50%); }
+}
+
 /* Reset log */
 #log-section {
   margin-top: 32px;

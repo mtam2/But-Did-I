@@ -26,6 +26,8 @@ Open `index.html` in any modern browser, or use the standalone `dist/but-did-i.h
 
 **Backdate a reset** -- forgot to hit reset right when you did the thing? Tap the calendar icon in the corner of the card. A picker opens with big day, hour, and minute steppers (hold one to scrub) and shortcuts like "1 hr ago". Pick the time and tap "save". The reset is recorded at that time. Picking a time before the last reset just moves that reset back instead of logging a new one.
 
+**Streak parties** -- a timer with an alarm keeps count of how long it has gone without an overdue reset. Every 30 days of resetting on time, the next reset throws confetti. Resetting while overdue starts the count over.
+
 **Delete a timer** -- click the x in the corner of a timer card.
 
 **Reset log** -- every reset is recorded at the bottom with the timer name, elapsed time, and timestamp. The log keeps the last 200 entries.
