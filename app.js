@@ -150,52 +150,72 @@ function restoreTimer(time) {
   render();
 }
 
+// Backdate picker: a dialog with big tap targets instead of the browser's
+// date/time inputs, which on many phones just bring up the keyboard.
+const backdateDialog = document.getElementById("backdate-dialog");
+const PICKER_MINUTE_STEP = 5;
+let picker = null; // { id, ts } while the dialog is open
+
 function backdateTimer(id) {
   const timer = state.timers.find((t) => t.id === id);
   if (!timer) return;
-  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
-  if (!card) return;
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  const dateValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const timeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  card.innerHTML = `
-    <div class="edit-form">
-      <label>Date<input type="date" class="backdate-date" max="${dateValue}" value="${dateValue}"></label>
-      <label>Time<input type="time" class="backdate-time" value="${timeValue}"></label>
-      <div class="edit-actions">
-        <button class="edit-save-btn" onclick="saveBackdate(${id})">save</button>
-        <button class="edit-cancel-btn" onclick="render()">cancel</button>
-      </div>
-    </div>`;
-  card.querySelector(".backdate-date").focus();
+  const d = new Date();
+  d.setMinutes(Math.floor(d.getMinutes() / PICKER_MINUTE_STEP) * PICKER_MINUTE_STEP, 0, 0);
+  picker = { id, ts: d.getTime() };
+  document.getElementById("backdate-hint").textContent =
+    `When did you last do "${timer.name}"?`;
+  renderPicker();
+  backdateDialog.showModal();
 }
 
-function saveBackdate(id) {
+function setPickerTime(ts) {
+  if (ts > Date.now()) return;
+  picker.ts = ts;
+  renderPicker();
+}
+
+function stepPicker(unit, dir) {
+  const d = new Date(picker.ts);
+  if (unit === "day") d.setDate(d.getDate() + dir);
+  else if (unit === "hr") d.setHours(d.getHours() + dir);
+  else d.setMinutes(d.getMinutes() + dir * PICKER_MINUTE_STEP);
+  setPickerTime(d.getTime());
+}
+
+function formatPickerDay(d) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(d);
+  day.setHours(0, 0, 0, 0);
+  const daysAgo = Math.round((today - day) / UNIT_MS.day);
+  if (daysAgo === 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "numeric",
+    day: "numeric",
+  });
+}
+
+function renderPicker() {
+  const timer = state.timers.find((t) => t.id === picker.id);
+  const d = new Date(picker.ts);
+  const h = d.getHours();
+  document.getElementById("picker-day").textContent = formatPickerDay(d);
+  document.getElementById("picker-hour").textContent =
+    `${h % 12 || 12} ${h >= 12 ? "pm" : "am"}`;
+  document.getElementById("picker-minute").textContent =
+    `:${String(d.getMinutes()).padStart(2, "0")}`;
+  let preview = `${formatAbsolute(picker.ts)} \u00b7 ${formatElapsed(Date.now() - picker.ts)} ago`;
+  if (timer && picker.ts < timer.resetTime)
+    preview += "\nThat's before the last reset, so the reset is moved instead of logged.";
+  document.getElementById("picker-preview").textContent = preview;
+}
+
+function applyBackdate(id, ts) {
   const timer = state.timers.find((t) => t.id === id);
   if (!timer) return;
-  const card = document.querySelector(`.timer-card[data-id="${id}"]`);
-  if (!card) return;
-  const dateInput = card.querySelector(".backdate-date");
-  const timeInput = card.querySelector(".backdate-time");
-  if (!dateInput.value) {
-    dateInput.focus();
-    return;
-  }
-  if (!timeInput.value) {
-    timeInput.focus();
-    return;
-  }
-  const ts = new Date(`${dateInput.value}T${timeInput.value}`).getTime();
-  if (Number.isNaN(ts)) {
-    dateInput.focus();
-    return;
-  }
-  if (ts > Date.now()) {
-    alert("Reset time can't be in the future.");
-    dateInput.focus();
-    return;
-  }
+  if (ts > Date.now()) return;
   if (ts >= timer.resetTime) {
     resetTimer(id, ts);
   } else {
@@ -204,6 +224,64 @@ function saveBackdate(id) {
     render();
   }
 }
+
+// Step buttons repeat while held, so scrubbing minutes doesn't need 12 taps.
+let holdDelay = null;
+let holdRepeat = null;
+
+function stopHold() {
+  clearTimeout(holdDelay);
+  clearInterval(holdRepeat);
+  holdDelay = holdRepeat = null;
+}
+
+document.querySelectorAll(".picker-step").forEach((btn) => {
+  const step = () => stepPicker(btn.dataset.unit, Number(btn.dataset.dir));
+  btn.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault();
+    stopHold();
+    step();
+    holdDelay = setTimeout(() => {
+      holdRepeat = setInterval(step, 90);
+    }, 400);
+  });
+  for (const type of ["pointerup", "pointercancel", "pointerleave"])
+    btn.addEventListener(type, stopHold);
+  btn.addEventListener("contextmenu", (e) => e.preventDefault());
+  // Keyboard activation fires click with detail 0; pointer clicks are already handled.
+  btn.addEventListener("click", (e) => {
+    if (e.detail === 0) step();
+  });
+});
+
+document.querySelectorAll(".picker-presets button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const d = new Date(Date.now() - Number(btn.dataset.ago));
+    d.setSeconds(0, 0);
+    setPickerTime(d.getTime());
+  });
+});
+
+document.getElementById("btn-backdate-save").addEventListener("click", () => {
+  if (!picker) return;
+  applyBackdate(picker.id, picker.ts);
+  backdateDialog.close();
+});
+
+document
+  .getElementById("btn-backdate-cancel")
+  .addEventListener("click", () => backdateDialog.close());
+
+// Tapping the dimmed backdrop closes the picker.
+backdateDialog.addEventListener("click", (e) => {
+  if (e.target === backdateDialog) backdateDialog.close();
+});
+
+backdateDialog.addEventListener("close", () => {
+  stopHold();
+  picker = null;
+});
 
 function deleteTimer(id) {
   const timer = state.timers.find((t) => t.id === id);

@@ -385,8 +385,8 @@ body.fullscreen .add-form {
   background: var(--border-light);
 }
 
-/* Export / import dialog */
-#data-dialog {
+/* Dialogs */
+dialog {
   /* The `* { margin: 0 }` reset above kills the UA's centering margin */
   margin: auto;
   border: 1px solid var(--border);
@@ -394,33 +394,18 @@ body.fullscreen .add-form {
   background: var(--surface);
   color: var(--text);
   padding: 20px;
-  width: min(560px, 92vw);
   box-shadow: 0 8px 30px var(--shadow);
 }
-#data-dialog::backdrop {
+dialog::backdrop {
   background: rgba(0, 0, 0, 0.4);
 }
-#data-dialog h2 {
+dialog h2 {
   margin: 0 0 6px;
 }
-#data-dialog-hint {
+.dialog-hint {
   font-size: 0.8125rem;
   color: var(--text-faint);
   margin-bottom: 12px;
-}
-#data-text {
-  width: 100%;
-  height: 150px;
-  resize: vertical;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  word-break: break-all;
 }
 .dialog-actions {
   display: flex;
@@ -442,15 +427,106 @@ body.fullscreen .add-form {
 .dialog-actions button:active {
   background: var(--border-light);
 }
-#btn-data-primary {
+.dialog-actions .dialog-primary {
   background: var(--btn-bg);
   color: var(--bg);
   border-color: var(--btn-bg);
 }
-#btn-data-primary:hover,
-#btn-data-primary:active {
+.dialog-actions .dialog-primary:hover,
+.dialog-actions .dialog-primary:active {
   background: var(--btn-bg-hover);
   border-color: var(--btn-bg-hover);
+}
+
+/* Export / import dialog */
+#data-dialog {
+  width: min(560px, 92vw);
+}
+#data-text {
+  width: 100%;
+  height: 150px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* Backdate picker dialog */
+#backdate-dialog {
+  width: min(340px, 92vw);
+}
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.picker-value {
+  flex: 1;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.picker-step {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.picker-step:hover,
+.picker-step:active {
+  background: var(--border-light);
+}
+.picker-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.picker-presets button {
+  flex: 1 1 auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  padding: 6px 12px;
+  min-height: 36px;
+  white-space: nowrap;
+}
+.picker-presets button:hover,
+.picker-presets button:active {
+  color: var(--text);
+  border-color: var(--text-faint);
+}
+.picker-preview {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-faint);
+  white-space: pre-line;
 }
 
 /* Reset log */

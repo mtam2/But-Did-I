@@ -71,7 +71,7 @@
 
     <dialog id="data-dialog">
       <h2 id="data-dialog-title">Export</h2>
-      <p id="data-dialog-hint"></p>
+      <p id="data-dialog-hint" class="dialog-hint"></p>
       <textarea
         id="data-text"
         spellcheck="false"
@@ -81,7 +81,40 @@
       ></textarea>
       <div class="dialog-actions">
         <button id="btn-data-close">close</button>
-        <button id="btn-data-primary">copy</button>
+        <button id="btn-data-primary" class="dialog-primary">copy</button>
+      </div>
+    </dialog>
+
+    <dialog id="backdate-dialog">
+      <h2>Reset earlier</h2>
+      <p id="backdate-hint" class="dialog-hint"></p>
+      <div class="picker">
+        <div class="picker-row">
+          <button type="button" class="picker-step" data-unit="day" data-dir="-1" aria-label="Previous day">&#8249;</button>
+          <span id="picker-day" class="picker-value"></span>
+          <button type="button" class="picker-step" data-unit="day" data-dir="1" aria-label="Next day">&#8250;</button>
+        </div>
+        <div class="picker-row">
+          <button type="button" class="picker-step" data-unit="hr" data-dir="-1" aria-label="An hour earlier">&#8249;</button>
+          <span id="picker-hour" class="picker-value"></span>
+          <button type="button" class="picker-step" data-unit="hr" data-dir="1" aria-label="An hour later">&#8250;</button>
+        </div>
+        <div class="picker-row">
+          <button type="button" class="picker-step" data-unit="min" data-dir="-1" aria-label="Five minutes earlier">&#8249;</button>
+          <span id="picker-minute" class="picker-value"></span>
+          <button type="button" class="picker-step" data-unit="min" data-dir="1" aria-label="Five minutes later">&#8250;</button>
+        </div>
+      </div>
+      <div class="picker-presets">
+        <button type="button" data-ago="900000">15 min ago</button>
+        <button type="button" data-ago="3600000">1 hr ago</button>
+        <button type="button" data-ago="10800000">3 hr ago</button>
+        <button type="button" data-ago="86400000">1 day ago</button>
+      </div>
+      <p id="picker-preview" class="picker-preview"></p>
+      <div class="dialog-actions">
+        <button id="btn-backdate-cancel">cancel</button>
+        <button id="btn-backdate-save" class="dialog-primary">save</button>
       </div>
     </dialog>
 

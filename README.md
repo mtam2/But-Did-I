@@ -24,7 +24,7 @@ Open `index.html` in any modern browser, or use the standalone `dist/but-did-i.h
 
 **Reset a timer** -- click "reset" when you've done the thing. The elapsed time gets logged and the timer restarts.
 
-**Backdate a reset** -- forgot to hit reset right when you did the thing? Click "earlier..." below the reset button, pick the date and time, and click "save". The reset is recorded at that time.
+**Backdate a reset** -- forgot to hit reset right when you did the thing? Tap the calendar icon in the corner of the card. A picker opens with big day, hour, and minute steppers (hold one to scrub) and shortcuts like "1 hr ago". Pick the time and tap "save". The reset is recorded at that time. Picking a time before the last reset just moves that reset back instead of logging a new one.
 
 **Delete a timer** -- click the x in the corner of a timer card.
 
